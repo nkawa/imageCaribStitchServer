@@ -27,11 +27,12 @@ class SetFileList(viewsets.ModelViewSet):
     serializer_class = ImFileSerializer
 
     def get_queryset(self):
-        files = glob.glob("/mnt/qnap105/gstreamer/2022/2022-05-17/cameraG?/*.mkv")
+#        files = glob.glob("/mnt/qnap105/gstreamer/2022/2022-05-17/cameraG?/*.mkv")
+        files = glob.glob("/mnt/qnap104/ptokai_demo/conv_mp4/2022-05-17/cameraG?/*.mp4")
     ## ここでモデルとして、ファイル一覧を登録する？
     ## 特定のフォルダで、ファイル一覧を登録するよう感じがいいかも。
     ## ImFile オブジェクトを追加する
-#        logging.debug("Coming here!! len:",len(files))
+##        logging.debug("Coming here!! len:",len(files))
         for f in files:
             ff = os.stat(f).st_ctime
             #ファイル名、ディレクトリ名でわけたほうが良さそうだね。（どっち側でやるか、って話はあるか）
