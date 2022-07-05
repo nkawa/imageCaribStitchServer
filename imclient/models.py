@@ -6,9 +6,11 @@ import glob
 
 # 画像1枚ごとのモデル。キャリブレーションデータも含む
 class CaribImage(models.Model):
-    caribName = models.CharField(max_length=10)    #カメラ名
-    caribFile = models.CharField(max_length=256)  #キャリブレーションファイル名
-    caribJson = models.JSONField()  #キャリブレーションファイル
+    cam = models.CharField(max_length=10)    #カメラ名
+    fname = models.CharField(max_length=256)  #キャリブレーションファイル名
+    time = models.FloatField(default=0) #時刻
+    json = models.JSONField(default=dict)  #キャリブレーションファイル
+    cfile = models.CharField(max_length=256,default="") #キャリブレーションされたイメージファイル名
 
 
 # 画面上への画像の配置

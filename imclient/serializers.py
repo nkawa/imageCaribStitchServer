@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User, Group
 from rest_framework import serializers
-from .models import ImFile
+from .models import ImFile, CaribImage
 
 class UserSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
@@ -17,3 +17,8 @@ class ImFileSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model =  ImFile
         fields = ['fname','fsize', 'fdate', 'fhuman']
+
+class CaribSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model =  CaribImage
+        fields = ['cam','fname', 'time', 'json','cfile']
