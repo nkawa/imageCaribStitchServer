@@ -2,6 +2,7 @@ import numpy as np
 import cv2
 import glob
 import yaml
+import json
 
 #Loading Caribration files
 
@@ -114,3 +115,121 @@ def planeCapture(fn, time, cfile):
     cv2.imwrite(cfile, im)
     cap.release()
     return cfile
+
+# 特定の変換を行って保存
+def convCb(fplane, cbinfo, cfile):
+    im = cv2.imread(fplane)
+    cimg, pimg, coi = convImg2(im, cbinfo, 1)
+    cv2.imwrite(cfile, pimg)
+    return cfile
+
+baseCarib = setCalibData()
+
+def convDefaultCb(fplane, cam, cfile):
+    cbinfo = baseCarib[cam]
+    convCb(fplane, cbinfo, cfile)
+    return cfile
+
+
+def convEditCb(fplane, calib, matrix, cfile):
+    cbinfo = {
+        'camera_matrix':{
+            'data': matrix,
+        },
+        'distortion_coefficients':{
+            'data': calib
+        }
+    }
+    convCb(fplane, cbinfo, cfile)
+    return cbinfo
+
+CHECKERBOARD = (5,7)
+
+def findCheckerImg(fplane, cfile, save=True):
+    print("Find Checker", fplane, cfile)
+    im = cv2.imread(fplane)
+    grayColor = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
+
+    ret, corners = cv2.findChessboardCorners(
+        grayColor, CHECKERBOARD,
+        cv2.CALIB_CB_ADAPTIVE_THRESH +
+        cv2.CALIB_CB_FAST_CHECK +
+        cv2.CALIB_CB_NORMALIZE_IMAGE
+    )
+    if ret == True and save:
+        im2 = cv2.drawChessboardCorners(
+            im, CHECKERBOARD, corners, ret
+        )
+        cv2.imwrite(cfile, im2)
+        print("Checker Done!", cfile)
+    else:
+        print("Can't find checker!!")
+
+    return ret, corners
+
+
+def saveCaribFile(basefile, caribs, destfile):
+    im = cv2.imread(basefile)
+    cimg, pimg, coi = convImg2(im, caribs, 1)
+    cv2.imwrite(destfile, pimg)
+
+
+# ファイル一覧で、一気にやる！
+
+CRITERIA = (cv2.TERM_CRITERIA_EPS+
+            cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
+
+def doCaribFiles(files):
+
+    objp = np.zeros((5*7,3),np.float32)
+    objp[:,:2] = np.mgrid[0:7,0:5].T.reshape(-1,2)
+    threedpts =[]
+    twodpts = []
+    print("doCarib with", len(files))
+    for i,fn in enumerate(files):
+        im = cv2.imread(fn)
+        grayColor = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
+        ret, corners = cv2.findChessboardCorners(
+            grayColor, CHECKERBOARD,
+            cv2.CALIB_CB_ADAPTIVE_THRESH +
+            cv2.CALIB_CB_FAST_CHECK +
+            cv2.CALIB_CB_NORMALIZE_IMAGE
+        )
+        if ret:
+            threedpts.append(objp)
+            corners2 = cv2.cornerSubPix(
+                grayColor, 
+                corners,
+                (11,11),(-1,-1),CRITERIA
+            )
+            twodpts.append(corners2)
+            print("Success:",i,fn)
+        else:
+            print("Failed:",i,fn)
+    h,w = grayColor.shape[:2]
+    print("W,H",w,h)
+        
+    ret, matrix, distortion, r_vecs, t_vecs = cv2.calibrateCamera(
+            threedpts, twodpts, grayColor.shape[::-1], None, None )
+
+    matrix = matrix.reshape(-1).tolist()
+    distortion = distortion.reshape(-1).tolist()
+    print(matrix)
+    print(distortion)
+    print("rvec",r_vecs)
+    print("tvec",t_vecs)
+    
+    carib = {
+        "image_width": w,
+        "image_height":h, 
+        "camera_name": "narrow_stereo",
+        "camera_matrix": {"rows":3, "cols":3, "data":matrix},
+        "camera_model" : "plumb_bob",
+        "distortion_coefficients": {"rows":1, "cols":5, "data":list(distortion)},
+        "rectification_matrix": {},
+        "projection_matrix": {},
+    }
+    print("Make Carib")
+    print(json.dumps(carib, indent=4))
+
+    return carib

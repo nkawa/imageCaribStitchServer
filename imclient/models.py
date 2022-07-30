@@ -7,8 +7,8 @@ import glob
 # 画像1枚ごとのモデル。キャリブレーションデータも含む
 class CaribImage(models.Model):
     cam = models.CharField(max_length=10)    #カメラ名
-    fname = models.CharField(max_length=256)  #キャリブレーションファイル名
-    time = models.FloatField(default=0) #時刻
+    fname = models.CharField(max_length=256)  #キャリブレーションビデオファイル
+    time = models.FloatField(default=0) #　ビデオをキャプチャした時刻（もしくは、順番）
     json = models.JSONField(default=dict)  #キャリブレーションファイル
     cfile = models.CharField(max_length=256,default="") #キャリブレーションされたイメージファイル名
 
